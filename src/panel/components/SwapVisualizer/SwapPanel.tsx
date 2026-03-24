@@ -39,15 +39,31 @@ function captureTargetHtml(selector: string, callback: (html: string | null) => 
 
 function processNewSwaps(): void {
   if (!recording.value) return
-  const completedSwaps = requests.value.filter(r =>
-    r.responseBody &&
-    r.phase !== 'trigger' &&
-    r.phase !== 'configuring' &&
-    !recordedIds.has(r.id)
-  )
 
-  for (const req of completedSwaps) {
+  let changed = false
+
+  for (const req of requests.value) {
+    if (!req.responseBody) continue
+    if (req.phase === 'trigger' || req.phase === 'configuring') continue
+
+    const existing = swapRecords.value.find(r => r.requestId === req.id)
+
+    if (existing) {
+      // Update existing record if snapshots arrived
+      if (req.domBefore && !existing.targetBefore) {
+        existing.targetBefore = req.domBefore
+        changed = true
+      }
+      if (req.domAfter && !existing.targetAfter) {
+        existing.targetAfter = req.domAfter
+        changed = true
+      }
+      continue
+    }
+
+    if (recordedIds.has(req.id)) continue
     recordedIds.add(req.id)
+
     const targetSel = req.targetElement?.selector || (req.targetElement?.id ? '#' + req.targetElement.id : '')
 
     const record: SwapRecord = {
@@ -57,20 +73,27 @@ function processNewSwaps(): void {
       swapStrategy: req.swapStrategy || 'innerHTML',
       targetSelector: targetSel,
       responseHtml: req.responseBody || '',
-      targetBefore: req.domBefore,
-      targetAfter: req.domAfter,
+      targetBefore: req.domBefore || null,
+      targetAfter: req.domAfter || null,
       timestamp: req.timing.swapStartAt || req.timing.completedAt || Date.now(),
     }
 
-    // Try to capture current target state
-    if (targetSel) {
+    // Capture current target state as fallback for "after"
+    if (targetSel && !record.targetAfter) {
       captureTargetHtml(targetSel, (html) => {
-        record.targetAfter = html
-        swapRecords.value = [...swapRecords.value]
+        if (html) {
+          record.targetAfter = html
+          swapRecords.value = [...swapRecords.value]
+        }
       })
     }
 
     swapRecords.value = [...swapRecords.value, record]
+    changed = false // already triggered by assignment above
+  }
+
+  if (changed) {
+    swapRecords.value = [...swapRecords.value]
   }
 }
 

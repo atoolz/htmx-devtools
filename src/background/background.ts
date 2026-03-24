@@ -142,6 +142,11 @@ api.runtime.onMessage.addListener((message: any, sender: chrome.runtime.MessageS
 
     case 'htmx:dom-snapshot': {
       tracker.handleDomSnapshot(tabId, payload)
+      // Notify panel that the request was updated with snapshot data
+      const snapReq = store.getRequest(tabId, payload.requestId)
+      if (snapReq) {
+        sendToPanel(tabId, { type: 'state:request', payload: snapReq })
+      }
       break
     }
 
