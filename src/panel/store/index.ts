@@ -15,7 +15,6 @@ export const htmxElements = signal<ElementDescriptor[]>([])
 export const activeTab = signal<'requests' | 'elements' | 'timeline' | 'swaps' | 'errors'>('requests')
 export const selectedRequestId = signal<string | null>(null)
 export const searchQuery = signal('')
-export const pendingAction = signal<string | null>(null)
 export const pickedSelector = signal<string>('')
 
 // ---- Derived state ----

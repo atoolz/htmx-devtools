@@ -1,5 +1,5 @@
 import { useSignal } from '@preact/signals'
-import { inspectedElement, htmxElements, pendingAction, pickedSelector, events } from '../../store'
+import { inspectedElement, htmxElements, pickedSelector, events } from '../../store'
 import { sendCommand } from '../../connection'
 import { api } from '../../../shared/browser-api'
 import { AttributeList } from './AttributeList'
@@ -282,19 +282,10 @@ export function ElementInspector() {
       }
     })
 
-    // Subscribe to context menu actions
-    const unsubAction = pendingAction.subscribe((val) => {
-      if (val === 'start-picker') {
-        pendingAction.value = null
-        doPick()
-      }
-    })
-
     return () => {
       clearInterval(interval)
       unsubEvents()
       unsubPicked()
-      unsubAction()
     }
   }, [])
 

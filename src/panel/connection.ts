@@ -42,14 +42,6 @@ export function connect(): void {
       case 'state:element-picked':
         store.pickedSelector.value = message.payload?.selector || ''
         break
-      case 'state:context-action':
-        if (message.payload?.action === 'inspect-element') {
-          store.activeTab.value = 'elements'
-          store.pendingAction.value = 'start-picker'
-        } else if (message.payload?.action === 'view-errors') {
-          store.activeTab.value = 'errors'
-        }
-        break
     }
   })
 

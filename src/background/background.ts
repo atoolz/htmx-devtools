@@ -50,12 +50,6 @@ api.runtime.onConnect.addListener((port) => {
         payload: null,
       })
 
-      // Send any pending context menu action
-      const pending = pendingContextActions.get(tabId)
-      if (pending) {
-        sendToPanel(tabId, { type: 'state:context-action', payload: pending })
-        pendingContextActions.delete(tabId)
-      }
       return
     }
 
@@ -183,36 +177,3 @@ api.tabs.onRemoved.addListener((tabId) => {
   panelPorts.delete(tabId)
 })
 
-// ---- Context Menus ----
-
-const pendingContextActions = new Map<number, { action: string }>()
-
-api.runtime.onInstalled.addListener(() => {
-  api.contextMenus.removeAll(() => {
-    api.contextMenus.create({
-      id: 'htmx-inspect',
-      title: 'Inspect HTMX',
-      contexts: ['all'],
-    })
-    api.contextMenus.create({
-      id: 'htmx-errors',
-      title: 'View HTMX Errors',
-      contexts: ['all'],
-    })
-  })
-})
-
-api.contextMenus.onClicked.addListener((info, tab) => {
-  if (!tab?.id) return
-  const tabId = tab.id
-
-  if (info.menuItemId === 'htmx-inspect') {
-    pendingContextActions.set(tabId, { action: 'inspect-element' })
-    sendToPanel(tabId, { type: 'state:context-action', payload: { action: 'inspect-element' } })
-  }
-
-  if (info.menuItemId === 'htmx-errors') {
-    pendingContextActions.set(tabId, { action: 'view-errors' })
-    sendToPanel(tabId, { type: 'state:context-action', payload: { action: 'view-errors' } })
-  }
-})

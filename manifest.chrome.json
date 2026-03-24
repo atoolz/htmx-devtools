@@ -3,7 +3,7 @@
   "name": "HTMX DevTools",
   "version": "0.1.0",
   "description": "Developer tools for debugging HTMX applications. Inspect requests, elements, swaps, and errors.",
-  "permissions": ["activeTab", "contextMenus"],
+  "permissions": ["activeTab"],
   "action": {},
   "devtools_page": "devtools.html",
   "background": {

@@ -147,7 +147,6 @@ export type PanelMessage =
   | { type: 'state:page-info'; payload: HtmxPageInfo }
   | { type: 'state:element-inspected'; payload: InspectedElement }
   | { type: 'state:element-list'; payload: ElementDescriptor[] }
-  | { type: 'state:context-action'; payload: { action: string } }
   | { type: 'state:element-picked'; payload: { selector: string } }
   | { type: 'state:clear'; payload: null }
 
