@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "HTMX DevTools",
+  "version": "0.1.0",
+  "description": "Developer tools for debugging HTMX applications. Inspect requests, elements, swaps, and errors.",
+  "permissions": ["activeTab"],
+  "action": {},
+  "devtools_page": "devtools.html",
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["page-script.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["page-script.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "htmx-devtools@devtools",
+      "strict_min_version": "128.0"
+    }
+  },
+  "icons": {
+    "16": "icons/htmx-16.png",
+    "48": "icons/htmx-48.png",
+    "128": "icons/htmx-128.png"
+  }
+}
