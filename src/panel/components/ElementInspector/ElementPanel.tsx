@@ -260,27 +260,30 @@ export function ElementInspector() {
     sendCommand('cmd:start-picker', null)
   }
 
-  useEffect(() => { doScan() }, [])
-
-  // Handle picker result from page-script via message pipeline
   useEffect(() => {
-    const sel = pickedSelector.value
-    if (sel) {
-      picking.value = false
-      pickedSelector.value = ''
-      selectedSelector.value = sel
-      inspectElement(sel)
-      doScan()
-    }
-  }, [pickedSelector.value])
+    doScan()
 
-  // Handle pending action from context menu
-  useEffect(() => {
-    if (pendingAction.value === 'start-picker') {
-      pendingAction.value = null
-      doPick()
-    }
-  }, [pendingAction.value])
+    // Subscribe to picker results from page-script
+    const unsubPicked = pickedSelector.subscribe((sel) => {
+      if (sel) {
+        picking.value = false
+        pickedSelector.value = ''
+        selectedSelector.value = sel
+        inspectElement(sel)
+        doScan()
+      }
+    })
+
+    // Subscribe to context menu actions
+    const unsubAction = pendingAction.subscribe((val) => {
+      if (val === 'start-picker') {
+        pendingAction.value = null
+        doPick()
+      }
+    })
+
+    return () => { unsubPicked(); unsubAction() }
+  }, [])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>

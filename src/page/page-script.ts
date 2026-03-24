@@ -331,7 +331,7 @@ window.addEventListener('message', (event) => {
 
   if (type === 'cmd:clear') {
     eventIdCounter = 0
-    snapshotsEnabled = false
+    snapshotsEnabled = true
     pendingMessages = []
     if (batchTimer) {
       clearTimeout(batchTimer)

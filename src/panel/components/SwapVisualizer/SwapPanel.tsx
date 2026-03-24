@@ -1,4 +1,5 @@
 import { signal } from '@preact/signals'
+import { useEffect } from 'preact/hooks'
 import { requests } from '../../store'
 import { api } from '../../../shared/browser-api'
 import { DomDiff } from './DomDiff'
@@ -47,7 +48,7 @@ function processNewSwaps(): void {
 
   for (const req of completedSwaps) {
     recordedIds.add(req.id)
-    const targetSel = req.targetElement?.selector || req.targetElement?.id ? '#' + req.targetElement.id : ''
+    const targetSel = req.targetElement?.selector || (req.targetElement?.id ? '#' + req.targetElement.id : '')
 
     const record: SwapRecord = {
       requestId: req.id,
@@ -80,8 +81,8 @@ function clearRecords(): void {
 }
 
 export function SwapPanel() {
-  // Check for new swaps on each render
-  processNewSwaps()
+  const reqs = requests.value
+  useEffect(() => { processNewSwaps() }, [reqs])
 
   const records = swapRecords.value
   const selected = records.find(r => r.requestId === selectedId.value)
