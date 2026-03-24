@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>HTMX DevTools - Demo Page</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <style>
+    :root {
+      --bodyBackground: #1a1a2e;
+      --textColor: #c7c4c1;
+      --midBlue: #5b96d5;
+      --anchorColor: #5b96d5;
+      --alertBackground: #16213e;
+      --alertBorder: #334155;
+      --codeBg: #0f0f23;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+      font-size: 14px; line-height: 1.5;
+      color: var(--textColor); background: var(--bodyBackground);
+      display: flex; flex-direction: column;
+    }
+    a { text-decoration: none; color: var(--anchorColor); }
+    a:hover { opacity: 0.6; }
+    .top-nav {
+      line-height: 28px; padding: 6px 16px;
+      border-bottom: 1px solid #d0d0d0;
+      background: linear-gradient(#fff, #f4f5f5);
+      box-shadow: 0px 4px 15px 0px #efefef;
+      display: flex; align-items: center; gap: 16px;
+      flex-shrink: 0;
+    }
+    .logo { font-size: 22px; font-weight: bold; color: #111; }
+    .logo span { color: #3366cc; }
+    .top-nav a { margin-left: 8px; font-size: 13px; color: #3366cc; }
+    .page-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 20px; }
+    .c { max-width: 100%; margin: 0; }
+    h2 { font-weight: 600; line-height: 1em; margin: 1em 0 0.4em; padding-bottom: 0.2em; border-bottom: 1px solid var(--alertBorder); font-size: 1.1em; color: #e2e8f0; }
+    h3 { font-weight: 600; margin: 0.6em 0 0.3em; color: #94a3b8; font-size: 0.85em; }
+    .btn {
+      padding: 0.4em 0.8em; letter-spacing: 0.05em; text-transform: uppercase;
+      border: solid 2px; cursor: pointer; border-radius: 6px;
+      font-size: 0.78em; font-weight: 600; font-family: inherit;
+      display: inline-block; text-decoration: none; white-space: nowrap;
+    }
+    .btn:hover { opacity: 0.6; }
+    .btn.primary { color: white; background: var(--midBlue); border-color: var(--midBlue); }
+    .btn.danger { color: white; background: #d9534f; border-color: #d9534f; }
+    .btn.success { color: white; background: #5cb85c; border-color: #5cb85c; }
+    .btn.warning { color: white; background: #f0ad4e; border-color: #f0ad4e; }
+    .btn.outline { background: transparent; color: #e2e8f0; border-color: #475569; }
+    input[type="text"], input[type="email"] {
+      padding: 0.35em 0.6em; border: 1px solid var(--alertBorder); border-radius: 4px;
+      font-size: 0.85em; font-family: inherit; background: var(--bodyBackground); color: var(--textColor);
+    }
+    input:focus { outline: none; border-color: var(--midBlue); }
+    label { font-size: 0.85em; display: block; margin-bottom: 0.1em; font-weight: 600; }
+    .flex { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    @media (max-width: 80rem) { .grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 45rem) { .grid { grid-template-columns: 1fr; } }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-row { margin-bottom: 0.4em; }
+    .demo-result {
+      margin-top: 0.4em; padding: 0.4em 0.6em;
+      background: var(--codeBg); color: #abb2bf;
+      border-radius: 4px; font-family: monospace; font-size: 0.8em;
+      min-height: 1.6em;
+    }
+    .alert {
+      border: 1px solid var(--alertBorder); padding: 10px; margin: 0.6em 0;
+      background-color: var(--alertBackground); border-radius: 4px;
+    }
+    .section { margin-bottom: 0; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.8em; font-weight: 600; }
+    .badge-success { background: #1a3a2a; color: #86efac; }
+    .badge-error { background: #3a1a1a; color: #fca5a5; }
+    .todo-item { display: flex; align-items: center; gap: 6px; padding: 0.3em 0; border-bottom: 1px solid var(--alertBorder); font-size: 0.9em; }
+    .todo-item.done span { text-decoration: line-through; opacity: 0.5; }
+    code { background: #3465a41f; border-radius: 2px; padding: 2px 5px; font-size: 0.9em; }
+    .htmx-indicator { display: none; }
+    .htmx-request .htmx-indicator { display: inline; }
+    table { width: 100%; border-collapse: collapse; margin: 0.3em 0; }
+    td, th { padding: 0.2em 0.4em; border-bottom: 1px solid var(--alertBorder); text-align: left; font-size: 0.85em; }
+    th { border-bottom-width: 2px; font-weight: 600; }
+    .banner {
+      background: linear-gradient(135deg, #3366cc 0%, #5b96d5 100%);
+      color: white; padding: 8px 16px; text-align: center; font-size: 13px;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+    }
+    .banner a { color: white; text-decoration: underline; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="top-nav">
+    <div class="logo">&lt;<span>/</span>&gt; htmx devtools</div>
+    <span style="color:#999;font-size:12px;">demo page</span>
+    <span style="flex:1;"></span>
+    <a href="https://github.com/atoolz/htmx-devtools">GitHub</a>
+    <a href="https://htmx.org/docs/">htmx docs</a>
+  </div>
+
+  <div class="banner">
+    Install the extension to see the HTMX DevTools panel in your browser's DevTools (F12).
+    <a href="https://github.com/atoolz/htmx-devtools#installation">Install Guide</a>
+  </div>
+
+  <div class="page-content">
+  <div class="c">
+
+  <div class="grid">
+    <div class="section">
+      <h2>Basic Requests</h2>
+
+      <h3>GET Request</h3>
+      <div class="flex">
+        <button class="btn primary" hx-get="/mock/time" hx-target="#get-result" hx-swap="innerHTML">
+          Get Server Time
+        </button>
+      </div>
+      <div id="get-result" class="demo-result">Click to load</div>
+
+      <h3>POST Request</h3>
+      <div class="flex">
+        <input type="text" id="message-input" name="message" placeholder="Type a message..." />
+        <button class="btn success" hx-post="/mock/echo" hx-target="#post-result" hx-include="#message-input">
+          Send POST
+        </button>
+      </div>
+      <div id="post-result" class="demo-result">Waiting for POST...</div>
+
+      <h3>PUT Request</h3>
+      <button class="btn warning" hx-put="/mock/update" hx-target="#put-result" hx-swap="innerHTML">
+        Send PUT
+      </button>
+      <div id="put-result" class="demo-result">Waiting for PUT...</div>
+
+      <h3>DELETE Request</h3>
+      <button class="btn danger" hx-delete="/mock/item" hx-target="#delete-result" hx-swap="innerHTML" hx-confirm="Delete item?">
+        Delete Item
+      </button>
+      <div id="delete-result" class="demo-result">Waiting for DELETE...</div>
+    </div>
+
+    <div class="section">
+      <h2>Error Scenarios</h2>
+
+      <h3>404 Not Found</h3>
+      <button class="btn danger" hx-get="/mock/404" hx-target="#error-404">
+        Trigger 404
+      </button>
+      <div id="error-404" class="demo-result">Waiting...</div>
+
+      <h3>500 Server Error</h3>
+      <button class="btn danger" hx-get="/mock/500" hx-target="#error-500">
+        Trigger 500
+      </button>
+      <div id="error-500" class="demo-result">Waiting...</div>
+
+      <h3>Invalid Target</h3>
+      <button class="btn danger" hx-get="/mock/time" hx-target="#nonexistent-element">
+        Target Not Found
+      </button>
+
+      <h3>Validation Error</h3>
+      <form hx-post="/mock/validate" hx-target="#validation-result">
+        <div class="flex">
+          <input type="email" name="email" required placeholder="Enter email..." />
+          <button type="submit" class="btn warning">Submit</button>
+        </div>
+      </form>
+      <div id="validation-result" class="demo-result">Waiting...</div>
+    </div>
+
+    <div class="section">
+      <h2>Swap Strategies</h2>
+
+      <h3><code>innerHTML</code> (default)</h3>
+      <button class="btn outline" hx-get="/mock/swap" hx-target="#swap-inner" hx-swap="innerHTML">
+        Swap innerHTML
+      </button>
+      <div id="swap-inner" class="demo-result">Original content</div>
+
+      <h3><code>outerHTML</code></h3>
+      <button class="btn outline" hx-get="/mock/swap-outer" hx-target="#swap-outer" hx-swap="outerHTML">
+        Swap outerHTML
+      </button>
+      <div id="swap-outer" class="demo-result">Will be replaced entirely</div>
+
+      <h3><code>beforeend</code> (append)</h3>
+      <button class="btn outline" hx-get="/mock/append" hx-target="#swap-append" hx-swap="beforeend">
+        Append Item
+      </button>
+      <div id="swap-append" class="demo-result">Items: </div>
+
+      <h3><code>delete</code></h3>
+      <div id="delete-me" class="alert">
+        <button class="btn danger" hx-delete="/mock/remove" hx-target="#delete-me" hx-swap="delete">
+          Delete This Section
+        </button>
+        This section will be removed from the DOM.
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Out-of-Band Swaps</h2>
+      <button class="btn primary" hx-get="/mock/oob" hx-target="#oob-main">
+        Trigger OOB Swap
+      </button>
+      <div id="oob-main" class="demo-result">Main target</div>
+      <div id="oob-sidebar" class="demo-result" style="margin-top:8px;">Sidebar (OOB target)</div>
+      <div id="oob-counter" class="demo-result" style="margin-top:8px;">Counter: 0</div>
+    </div>
+
+    <div class="section">
+      <h2>Contact Editor</h2>
+      <div class="alert">
+        <div id="contact-1">
+          <div hx-target="this" hx-swap="outerHTML">
+            <table>
+              <tr><th>First Name</th><td>Joe</td></tr>
+              <tr><th>Last Name</th><td>Blow</td></tr>
+              <tr><th>Email</th><td>joe@blow.com</td></tr>
+            </table>
+            <button hx-get="/mock/contact-edit" class="btn primary" style="margin-top:8px;">Click To Edit</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Todo List</h2>
+      <form hx-post="/mock/todo-add" hx-target="#todo-list" hx-swap="beforeend">
+        <div class="flex">
+          <input type="text" name="text" placeholder="New todo..." required style="flex:1;" />
+          <button type="submit" class="btn success">Add</button>
+        </div>
+      </form>
+      <div id="todo-list" style="margin-top:4px;">
+        <div class="todo-item done" id="todo-1">
+          <input type="checkbox" checked hx-patch="/mock/todo-toggle" hx-target="#todo-1" hx-swap="outerHTML" />
+          <span style="flex:1;">Learn HTMX</span>
+          <button class="btn danger" style="padding:4px 10px;font-size:0.75em;" hx-delete="/mock/todo-del" hx-target="#todo-1" hx-swap="delete">x</button>
+        </div>
+        <div class="todo-item" id="todo-2">
+          <input type="checkbox" hx-patch="/mock/todo-toggle" hx-target="#todo-2" hx-swap="outerHTML" />
+          <span style="flex:1;">Build DevTools</span>
+          <button class="btn danger" style="padding:4px 10px;font-size:0.75em;" hx-delete="/mock/todo-del" hx-target="#todo-2" hx-swap="delete">x</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+  </div>
+
+  <script>
+  // Mock server: intercept all htmx requests and return mock responses
+  (function() {
+    var oobCount = 0;
+    var appendCount = 0;
+    var todoCount = 3;
+
+    function time() { return new Date().toLocaleTimeString(); }
+
+    var routes = {
+      'GET /mock/time': function() {
+        return [200, '<span class="badge badge-success">Server time: ' + time() + '</span>'];
+      },
+      'POST /mock/echo': function(params) {
+        return [200, '<span>Echo: <strong>' + (params.message || '(empty)') + '</strong> at ' + time() + '</span>'];
+      },
+      'PUT /mock/update': function() {
+        return [200, '<span class="badge badge-success">Updated at ' + time() + '</span>'];
+      },
+      'DELETE /mock/item': function() {
+        return [200, '<span class="badge badge-error">Item deleted</span>'];
+      },
+      'GET /mock/404': function() {
+        return [404, '<span class="badge badge-error">404 Not Found</span>'];
+      },
+      'GET /mock/500': function() {
+        return [500, '<span class="badge badge-error">500 Internal Server Error</span>'];
+      },
+      'POST /mock/validate': function(params) {
+        if (!params.email || params.email.indexOf('@') === -1) {
+          return [422, '<span class="badge badge-error">Invalid email</span>'];
+        }
+        return [200, '<span class="badge badge-success">Valid: ' + params.email + '</span>'];
+      },
+      'GET /mock/swap': function() {
+        return [200, '<strong style="color:#22c55e;">New content at ' + time() + '</strong>'];
+      },
+      'GET /mock/swap-outer': function() {
+        return [200, '<div id="swap-outer" class="demo-result" style="border:2px solid #22c55e;"><strong>Replaced!</strong> ' + time() + '</div>'];
+      },
+      'GET /mock/append': function() {
+        appendCount++;
+        return [200, '<span class="badge badge-success" style="margin:2px;">Item ' + appendCount + '</span>'];
+      },
+      'DELETE /mock/remove': function() {
+        return [200, ''];
+      },
+      'GET /mock/oob': function() {
+        oobCount++;
+        return [200,
+          '<div id="oob-main">Main updated at ' + time() + '</div>' +
+          '<div id="oob-sidebar" hx-swap-oob="true">Sidebar OOB! (' + oobCount + ')</div>' +
+          '<div id="oob-counter" hx-swap-oob="true">Counter: ' + oobCount + '</div>'
+        ];
+      },
+      'GET /mock/contact-edit': function() {
+        return [200,
+          '<form hx-put="/mock/contact-save" hx-target="this" hx-swap="outerHTML">' +
+          '<div class="form-row"><label>First Name</label><input type="text" name="firstName" value="Joe" /></div>' +
+          '<div class="form-row"><label>Last Name</label><input type="text" name="lastName" value="Blow" /></div>' +
+          '<div class="form-row"><label>Email</label><input type="email" name="email" value="joe@blow.com" /></div>' +
+          '<div class="flex" style="margin-top:8px;">' +
+          '<button type="submit" class="btn success">Save</button>' +
+          '<button class="btn outline" hx-get="/mock/contact-view" hx-target="this" hx-swap="outerHTML">Cancel</button>' +
+          '</div></form>'
+        ];
+      },
+      'PUT /mock/contact-save': function(params) {
+        return [200,
+          '<div hx-target="this" hx-swap="outerHTML">' +
+          '<table><tr><th>First Name</th><td>' + (params.firstName || 'Joe') + '</td></tr>' +
+          '<tr><th>Last Name</th><td>' + (params.lastName || 'Blow') + '</td></tr>' +
+          '<tr><th>Email</th><td>' + (params.email || 'joe@blow.com') + '</td></tr></table>' +
+          '<button hx-get="/mock/contact-edit" class="btn primary" style="margin-top:8px;">Click To Edit</button></div>'
+        ];
+      },
+      'GET /mock/contact-view': function() {
+        return routes['PUT /mock/contact-save']({firstName:'Joe',lastName:'Blow',email:'joe@blow.com'});
+      },
+      'POST /mock/todo-add': function(params) {
+        var id = todoCount++;
+        return [200,
+          '<div class="todo-item" id="todo-' + id + '">' +
+          '<input type="checkbox" hx-patch="/mock/todo-toggle" hx-target="#todo-' + id + '" hx-swap="outerHTML" />' +
+          '<span style="flex:1;">' + (params.text || 'New todo') + '</span>' +
+          '<button class="btn danger" style="padding:4px 10px;font-size:0.75em;" hx-delete="/mock/todo-del" hx-target="#todo-' + id + '" hx-swap="delete">x</button>' +
+          '</div>'
+        ];
+      },
+      'PATCH /mock/todo-toggle': function() {
+        return [200, '<div class="todo-item"><span>Toggled!</span></div>'];
+      },
+      'DELETE /mock/todo-del': function() {
+        return [200, ''];
+      }
+    };
+
+    // Intercept XMLHttpRequest
+    var OrigXHR = XMLHttpRequest;
+    function MockXHR() {
+      var real = new OrigXHR();
+      var self = this;
+      var _method, _url, _body;
+
+      // Copy properties
+      ['readyState','status','statusText','response','responseText','responseType',
+       'responseURL','responseXML','timeout','withCredentials','upload'].forEach(function(prop) {
+        try {
+          Object.defineProperty(self, prop, {
+            get: function() { return real[prop]; },
+            set: function(v) { real[prop] = v; },
+            configurable: true
+          });
+        } catch(e) {}
+      });
+
+      self.open = function(method, url) {
+        _method = method;
+        _url = url;
+        // Don't actually open - we'll mock the response
+      };
+
+      self.setRequestHeader = function() {};
+      self.getResponseHeader = function(name) {
+        if (name.toLowerCase() === 'content-type') return 'text/html';
+        return null;
+      };
+      self.getAllResponseHeaders = function() {
+        return 'content-type: text/html\r\n';
+      };
+      self.overrideMimeType = function() {};
+
+      self.send = function(body) {
+        _body = body;
+        var params = {};
+        if (_body && typeof _body === 'string') {
+          _body.split('&').forEach(function(pair) {
+            var kv = pair.split('=');
+            params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
+          });
+        }
+
+        var path = _url.split('?')[0];
+        var key = _method + ' ' + path;
+        var handler = routes[key];
+
+        setTimeout(function() {
+          var status, responseText;
+          if (handler) {
+            var result = handler(params);
+            status = result[0];
+            responseText = result[1];
+          } else {
+            status = 404;
+            responseText = '<span class="badge badge-error">404: ' + path + ' not found</span>';
+          }
+
+          Object.defineProperty(self, 'readyState', { value: 4, writable: false, configurable: true });
+          Object.defineProperty(self, 'status', { value: status, writable: false, configurable: true });
+          Object.defineProperty(self, 'statusText', { value: status === 200 ? 'OK' : 'Error', writable: false, configurable: true });
+          Object.defineProperty(self, 'responseText', { value: responseText, writable: false, configurable: true });
+          Object.defineProperty(self, 'response', { value: responseText, writable: false, configurable: true });
+
+          if (self.onloadstart) self.onloadstart(new ProgressEvent('loadstart'));
+          if (self.onload) self.onload(new ProgressEvent('load'));
+          if (self.onloadend) self.onloadend(new ProgressEvent('loadend'));
+
+          // Dispatch events for htmx
+          self.dispatchEvent(new ProgressEvent('loadstart'));
+          self.dispatchEvent(new ProgressEvent('load'));
+          self.dispatchEvent(new ProgressEvent('loadend'));
+        }, 50 + Math.random() * 100);
+      };
+
+      self.abort = function() {};
+
+      // EventTarget
+      var listeners = {};
+      self.addEventListener = function(type, fn) {
+        if (!listeners[type]) listeners[type] = [];
+        listeners[type].push(fn);
+      };
+      self.removeEventListener = function(type, fn) {
+        if (listeners[type]) listeners[type] = listeners[type].filter(function(f) { return f !== fn; });
+      };
+      self.dispatchEvent = function(evt) {
+        var fns = listeners[evt.type] || [];
+        fns.forEach(function(fn) { fn(evt); });
+      };
+    }
+
+    window.XMLHttpRequest = MockXHR;
+  })();
+  </script>
+</body>
+</html>
