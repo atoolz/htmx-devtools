@@ -1,22 +1,16 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="HTMX DevTools" width="100%">
-</p>
-
-<h1 align="center">&lt;/&gt; HTMX DevTools</h1>
-
-<p align="center">
-  Browser DevTools extension for debugging <a href="https://htmx.org">HTMX</a> applications.<br>
-  Inspect requests, elements, events, swaps, and errors in real time.
+  <img src="assets/banner.png" alt="HTMX DevTools" width="100%">
 </p>
 
 <p align="center">
-  <a href="https://atoolz.github.io/htmx-devtools/">Live Demo</a> &middot;
-  <a href="#installation">Install</a> &middot;
-  <a href="#features">Features</a> &middot;
-  <a href="#how-it-works">Architecture</a>
+  Browser DevTools extension for debugging HTMX applications. Inspect requests, elements, events, swaps, and errors in real time.
 </p>
 
----
+<p align="center">
+  <a href="https://github.com/atoolz/htmx-devtools/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license MIT"></a>
+  <a href="https://htmx.org"><img src="https://img.shields.io/badge/HTMX-2.x-blue" alt="HTMX 2.x"></a>
+  <a href="https://atoolz.github.io/htmx-devtools/"><img src="https://img.shields.io/badge/demo-live-brightgreen" alt="Live Demo"></a>
+</p>
 
 ## Features
 
