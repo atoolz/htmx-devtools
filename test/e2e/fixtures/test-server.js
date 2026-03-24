@@ -38,7 +38,7 @@ function html(body) {
     html, body { height: 100%; overflow: hidden; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-      font-size: 14px; line-height: 1.5;
+      font-size: 16px; line-height: 1.5;
       color: var(--textColor); background: var(--bodyBackground);
       display: flex; flex-direction: column;
     }
