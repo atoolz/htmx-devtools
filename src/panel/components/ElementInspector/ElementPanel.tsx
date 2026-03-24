@@ -308,8 +308,9 @@ export function ElementInspector() {
           onClick={doPick}
           style={{ color: picking.value ? 'var(--accent)' : undefined, width: '28px', height: '28px', padding: '2px' }}
         >
-          <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
-            <path d="M3 1h4v1H4v3H3V1zm6 0h4v4h-1V2H9V1zM4 12H3V8h1v4zm-1 3h4v-1H4v-3H3v4zm6 0h4v-4h-1v3H9v1zm4-8h-1V4h1v3zM8 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 1a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 3h5v2H5v4H3V4a1 1 0 0 1 1-1zm11 0h5a1 1 0 0 1 1 1v5h-2V5h-4V3zM3 15h2v4h4v2H4a1 1 0 0 1-1-1v-5zm18 0v5a1 1 0 0 1-1 1h-5v-2h4v-4h2z"/>
+            <path d="M10 8l-6 6m0 0V9m0 5h5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
         <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
