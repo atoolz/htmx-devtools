@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/screenshots/requests.png" alt="HTMX DevTools" width="100%">
+  <img src="docs/demos/demo-panel.gif" alt="HTMX DevTools - All Features" width="700">
 </p>
 
 <h1 align="center">&lt;/&gt; HTMX DevTools</h1>
@@ -31,7 +31,7 @@ Capture the full HTMX request lifecycle with timing breakdown, headers, request/
 - Record / Pause / Clear controls
 
 <p align="center">
-  <img src="docs/screenshots/requests.png" alt="Request Inspector" width="100%">
+  <img src="docs/demos/demo-requests.png" alt="Request Inspector" width="700">
 </p>
 
 ### Element Inspector
@@ -44,7 +44,7 @@ Live DOM tree showing all HTMX elements with their hierarchy, attributes, and re
 - Hover highlighting on the inspected page
 
 <p align="center">
-  <img src="docs/screenshots/elements.png" alt="Element Inspector" width="100%">
+  <img src="docs/demos/demo-elements.png" alt="Element Inspector" width="700">
 </p>
 
 ### Event Timeline
@@ -57,11 +57,7 @@ Filterable timeline of all HTMX events with category color coding and expandable
 - Request correlation (linked request ID)
 
 <p align="center">
-  <img src="docs/screenshots/timeline.png" alt="Event Timeline" width="100%">
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/timeline-detail.png" alt="Event Detail Expanded" width="100%">
+  <img src="docs/demos/demo-timeline-focus.gif" alt="Event Timeline with expandable details" width="700">
 </p>
 
 ### Swap Visualizer
@@ -75,7 +71,7 @@ Record DOM swaps with before/after snapshots and diff view.
 - Swap strategy and target element info
 
 <p align="center">
-  <img src="docs/screenshots/swaps.png" alt="Swap Visualizer" width="100%">
+  <img src="docs/demos/demo-swaps.png" alt="Swap Visualizer" width="700">
 </p>
 
 ### Error Panel
@@ -88,7 +84,7 @@ Surface silent HTMX failures grouped by error type with badge counts.
 - Click to jump to associated request
 
 <p align="center">
-  <img src="docs/screenshots/errors.png" alt="Error Panel" width="100%">
+  <img src="docs/demos/demo-errors.png" alt="Error Panel" width="700">
 </p>
 
 ---
