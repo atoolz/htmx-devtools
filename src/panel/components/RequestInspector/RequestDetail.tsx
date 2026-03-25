@@ -58,7 +58,7 @@ export function RequestDetail({ request }: { request: RequestLifecycle }) {
       <HeadersTable headers={request.responseHeaders} title="Response Headers" />
 
       {/* Body */}
-      {request.requestBody && (
+      {request.requestBody && Object.keys(request.requestBody).length > 0 && (
         <JsonViewer data={request.requestBody} label="Request Body" />
       )}
       {request.responseBody && (
