@@ -149,7 +149,13 @@ function inspectElement(selector: string): void {
         else idata[k] = String(v).slice(0,100);
       }
     } catch(e) {}
-    return JSON.stringify({ descriptor: desc, resolvedTargets: resolved, internalData: idata, requestHistory: [] });
+    var reqHistory = [];
+    try {
+      var rd = el['htmx-internal-data'] || el._htmx;
+      if (rd && rd.__devtools_req_history) reqHistory = rd.__devtools_req_history;
+      else if (rd && rd.__devtools_req_id) reqHistory = [rd.__devtools_req_id];
+    } catch(e) {}
+    return JSON.stringify({ descriptor: desc, resolvedTargets: resolved, internalData: idata, requestHistory: reqHistory });
   })()`
 
   api.devtools.inspectedWindow['eval'](code, (result: string, err: any) => {
