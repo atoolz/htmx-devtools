@@ -48,12 +48,24 @@ export function getHtmxAttributes(el: Element): Record<string, string> {
 }
 
 export function serializeElement(el: Element): ElementDescriptor {
-  const outerHtml = el.outerHTML
+  // Guard: if not a real Element, return a safe fallback
+  if (!el || typeof el.tagName !== 'string') {
+    return {
+      devtoolsId: 0,
+      tagName: 'unknown',
+      id: '',
+      classList: [],
+      htmxAttributes: {},
+      selector: '',
+      outerHtmlPreview: '',
+    }
+  }
+  const outerHtml = el.outerHTML || ''
   return {
     devtoolsId: getElementId(el),
     tagName: el.tagName.toLowerCase(),
-    id: el.id,
-    classList: Array.from(el.classList),
+    id: el.id || '',
+    classList: el.classList ? Array.from(el.classList) : [],
     htmxAttributes: getHtmxAttributes(el),
     selector: buildSelector(el),
     outerHtmlPreview: outerHtml.length > LIMITS.MAX_OUTER_HTML_PREVIEW
@@ -69,28 +81,40 @@ export function serializeDetail(detail: unknown): Record<string, unknown> {
   const obj = detail as Record<string, unknown>
 
   for (const key of Object.keys(obj)) {
-    const val = obj[key]
-    if (val instanceof Element) {
-      result[key] = serializeElement(val)
-    } else if (val instanceof XMLHttpRequest) {
-      result[key] = '[XMLHttpRequest]'
-    } else if (val instanceof Event) {
-      result[key] = `[${val.type} Event]`
-    } else if (typeof val === 'function') {
-      result[key] = '[Function]'
-    } else if (val instanceof FormData) {
-      const entries: Record<string, string> = {}
-      val.forEach((v, k) => { entries[k] = String(v) })
-      result[key] = entries
-    } else if (typeof val === 'object' && val !== null) {
-      try {
-        JSON.stringify(val)
+    try {
+      const val = obj[key]
+      if (val == null) {
+        result[key] = null
+      } else if (val instanceof Element) {
+        result[key] = serializeElement(val)
+      } else if (typeof XMLHttpRequest !== 'undefined' && val instanceof XMLHttpRequest) {
+        result[key] = '[XMLHttpRequest]'
+      } else if (val instanceof Response) {
+        result[key] = `[Response ${(val as Response).status}]`
+      } else if (val instanceof Headers) {
+        const h: Record<string, string> = {}
+        val.forEach((v, k) => { h[k] = v })
+        result[key] = h
+      } else if (val instanceof Event) {
+        result[key] = `[${val.type} Event]`
+      } else if (typeof val === 'function') {
+        result[key] = '[Function]'
+      } else if (val instanceof FormData) {
+        const entries: Record<string, string> = {}
+        val.forEach((v, k) => { entries[k] = String(v) })
+        result[key] = entries
+      } else if (typeof val === 'object') {
+        try {
+          JSON.stringify(val)
+          result[key] = val
+        } catch {
+          result[key] = String(val)
+        }
+      } else {
         result[key] = val
-      } catch {
-        result[key] = String(val)
       }
-    } else {
-      result[key] = val
+    } catch {
+      result[key] = '[unserializable]'
     }
   }
 
