@@ -51,25 +51,23 @@ htmx.registerExtension('my-ext', {
     init: (api) => { },
 
     // Each event gets its own hook (replaces onEvent catch-all)
+    // Note: only ONE htmx_config_request per extension. Combine all config logic here.
     htmx_config_request: (elt, detail) => {
         detail.ctx.request.headers['X-Custom'] = 'value';
+        // Replaces encodeParameters: modify body in config phase
+        detail.ctx.request.headers['Content-Type'] = 'application/json';
+        detail.ctx.request.body = JSON.stringify(
+            Object.fromEntries(detail.ctx.request.body)
+        );
     },
 
     htmx_before_swap: (elt, detail) => {
         // No more shouldSwap, just don't return false
     },
 
-    // Replaces transformResponse
+    // Replaces transformResponse: mutations to detail.ctx.text are used by htmx during swap
     htmx_after_request: (elt, detail) => {
         detail.ctx.text = detail.ctx.text.toUpperCase();
-    },
-
-    // Replaces encodeParameters (modify body in config phase)
-    htmx_config_request: (elt, detail) => {
-        detail.ctx.request.headers['Content-Type'] = 'application/json';
-        detail.ctx.request.body = JSON.stringify(
-            Object.fromEntries(detail.ctx.request.body)
-        );
     },
 
     // Replaces both isInlineSwap and handleSwap
@@ -165,8 +163,8 @@ All events changed from camelCase to colon-namespaced format. Some events were c
 | `htmx:beforeHistorySave` | `htmx:before:history:update` | `htmx_before_history_update` |
 | `htmx:pushedIntoHistory` | `htmx:after:history:push` | `htmx_after_history_push` |
 | `htmx:replacedInHistory` | `htmx:after:history:replace` | `htmx_after_history_replace` |
-| `htmx:historyCacheMiss` | `htmx:before:history:restore` | `htmx_before_history_restore` |
-| `htmx:historyRestore` | `htmx:before:history:restore` | `htmx_before_history_restore` |
+| `htmx:historyCacheMiss` | `htmx:before:history:restore` | `htmx_before_history_restore` | Note: localStorage history caching was removed in 4.0. Cache-miss handling no longer applies. |
+| `htmx:historyRestore` | `htmx:before:history:restore` | `htmx_before_history_restore` | Note: both events map here since caching was removed. |
 
 ### Errors (consolidated into one event)
 
@@ -196,9 +194,10 @@ All events changed from camelCase to colon-namespaced format. Some events were c
 
 | Event | Hook Name | Description |
 |-------|-----------|-------------|
-| `htmx:before:response` | `htmx_before_response` | After fetch completes, before body is consumed |
+| `htmx:before:response` | `htmx_before_response` | After response body is read into `ctx.text`, before swap begins |
 | `htmx:before:settle` | `htmx_before_settle` | Before settle phase |
 | `htmx:after:settle` | `htmx_after_settle` | After settle phase |
+| `htmx:after:process` | `htmx_after_process` | After a batch of elements is processed (use for subtree scanning; distinct from `htmx:after:init` which fires per-element) |
 | `htmx:before:cleanup` | `htmx_before_cleanup` | Before element cleanup |
 | `htmx:after:cleanup` | `htmx_after_cleanup` | After element cleanup |
 | `htmx:finally:request` | `htmx_finally_request` | Always fires after request (try/finally) |

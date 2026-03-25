@@ -41,13 +41,18 @@
         }
       })
 
-      // Restore hx-vals types (FormData stringifies everything)
-      const vals = api.getExpressionVars ? api.getExpressionVars(elt) : {}
-      Object.keys(object).forEach((key) => {
-        if (Object.hasOwn(vals, key)) {
-          object[key] = vals[key]
-        }
-      })
+      // Note: htmx 2.x used api.getExpressionVars() to restore hx-vals types
+      // (FormData stringifies everything). This API does not exist in htmx 4.0.
+      // Use api.getAttributeObject as a best-effort alternative.
+      try {
+        api.getAttributeObject(elt, 'hx-vals', (vals) => {
+          Object.keys(object).forEach((key) => {
+            if (vals && Object.hasOwn(vals, key)) {
+              object[key] = vals[key]
+            }
+          })
+        })
+      } catch { /* getAttributeObject may not be available */ }
 
       // Replace FormData body with JSON string
       detail.ctx.request.body = JSON.stringify(object)

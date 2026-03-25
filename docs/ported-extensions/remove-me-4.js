@@ -38,16 +38,11 @@
   }
 
   htmx.registerExtension('remove-me', {
-    // htmx:after:init fires after an element is processed (replaces htmx:afterProcessNode)
+    // htmx:after:init fires per-element, no need to querySelectorAll descendants
+    // (each descendant gets its own htmx_after_init call)
     htmx_after_init: (elt) => {
       if (elt.getAttribute) {
         maybeRemoveMe(elt)
-        if (elt.querySelectorAll) {
-          const children = elt.querySelectorAll('[remove-me], [data-remove-me]')
-          for (let i = 0; i < children.length; i++) {
-            maybeRemoveMe(children[i])
-          }
-        }
       }
     }
   })

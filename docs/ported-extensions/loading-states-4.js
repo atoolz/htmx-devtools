@@ -14,9 +14,9 @@
  * - htmx.closest() removed, use native Element.closest()
  * - htmx.findAll() removed, use document.querySelectorAll()
  * - evt.detail.pathInfo.requestPath -> detail.ctx.request.action
+ * - Undo queue now per-request (stored on detail.ctx) to fix concurrent request bug
  */
 (function() {
-  const loadingStatesUndoQueue = []
 
   function loadingStateContainer(target) {
     return target.closest('[data-loading-states]') || document.body
@@ -34,22 +34,22 @@
     return pathElt.getAttribute('data-loading-path') === requestPath
   }
 
-  function queueLoadingState(sourceElt, targetElt, doCallback, undoCallback) {
+  function queueLoadingState(undoQueue, sourceElt, targetElt, doCallback, undoCallback) {
     const delayElt = sourceElt.closest('[data-loading-delay]')
     if (delayElt) {
       const delayMs = delayElt.getAttribute('data-loading-delay') || 200
       const timeout = setTimeout(() => {
         doCallback()
-        loadingStatesUndoQueue.push(() => {
+        undoQueue.push(() => {
           mayProcessUndoCallback(targetElt, undoCallback)
         })
       }, delayMs)
-      loadingStatesUndoQueue.push(() => {
+      undoQueue.push(() => {
         mayProcessUndoCallback(targetElt, () => clearTimeout(timeout))
       })
     } else {
       doCallback()
-      loadingStatesUndoQueue.push(() => {
+      undoQueue.push(() => {
         mayProcessUndoCallback(targetElt, undoCallback)
       })
     }
@@ -68,6 +68,9 @@
 
   htmx.registerExtension('loading-states', {
     htmx_before_request: (elt, detail) => {
+      // Per-request undo queue (fixes concurrent request bug from 2.x)
+      const undoQueue = []
+      detail.ctx._loadingUndoQueue = undoQueue
       const container = loadingStateContainer(elt)
       const requestPath = detail.ctx.request.action
 
@@ -87,7 +90,7 @@
       // data-loading: show/hide
       eltsByType['data-loading'].forEach((sourceElt) => {
         getLoadingTarget(sourceElt).forEach((targetElt) => {
-          queueLoadingState(sourceElt, targetElt,
+          queueLoadingState(undoQueue, sourceElt, targetElt,
             () => { targetElt.style.display = sourceElt.getAttribute('data-loading') || 'inline-block' },
             () => { targetElt.style.display = 'none' }
           )
@@ -98,7 +101,7 @@
       eltsByType['data-loading-class'].forEach((sourceElt) => {
         const classNames = sourceElt.getAttribute('data-loading-class').split(' ')
         getLoadingTarget(sourceElt).forEach((targetElt) => {
-          queueLoadingState(sourceElt, targetElt,
+          queueLoadingState(undoQueue, sourceElt, targetElt,
             () => classNames.forEach((c) => targetElt.classList.add(c)),
             () => classNames.forEach((c) => targetElt.classList.remove(c))
           )
@@ -109,7 +112,7 @@
       eltsByType['data-loading-class-remove'].forEach((sourceElt) => {
         const classNames = sourceElt.getAttribute('data-loading-class-remove').split(' ')
         getLoadingTarget(sourceElt).forEach((targetElt) => {
-          queueLoadingState(sourceElt, targetElt,
+          queueLoadingState(undoQueue, sourceElt, targetElt,
             () => classNames.forEach((c) => targetElt.classList.remove(c)),
             () => classNames.forEach((c) => targetElt.classList.add(c))
           )
@@ -119,7 +122,7 @@
       // data-loading-disable: disable elements
       eltsByType['data-loading-disable'].forEach((sourceElt) => {
         getLoadingTarget(sourceElt).forEach((targetElt) => {
-          queueLoadingState(sourceElt, targetElt,
+          queueLoadingState(undoQueue, sourceElt, targetElt,
             () => { targetElt.disabled = true },
             () => { targetElt.disabled = false }
           )
@@ -129,7 +132,7 @@
       // data-loading-aria-busy: set aria-busy
       eltsByType['data-loading-aria-busy'].forEach((sourceElt) => {
         getLoadingTarget(sourceElt).forEach((targetElt) => {
-          queueLoadingState(sourceElt, targetElt,
+          queueLoadingState(undoQueue, sourceElt, targetElt,
             () => targetElt.setAttribute('aria-busy', 'true'),
             () => targetElt.removeAttribute('aria-busy')
           )
@@ -137,10 +140,11 @@
       })
     },
 
-    // Undo all loading states when response arrives
+    // Undo loading states for this specific request
     htmx_after_request: (elt, detail) => {
-      while (loadingStatesUndoQueue.length > 0) {
-        loadingStatesUndoQueue.shift()()
+      const undoQueue = detail.ctx._loadingUndoQueue || []
+      while (undoQueue.length > 0) {
+        undoQueue.shift()()
       }
     }
   })
