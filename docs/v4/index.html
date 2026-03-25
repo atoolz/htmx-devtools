@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>HTMX DevTools - Demo Page</title>
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="https://unpkg.com/htmx.org@4.0.0-alpha5"></script>
   <style>
     :root {
       --bodyBackground: #1a1a2e;
@@ -103,11 +103,9 @@
   </div>
 
   <div class="banner">
-    <a href="v2/">htmx 2.x Demo</a>
-    &middot;
-    <a href="v4/">htmx 4.0 Demo</a>
-    &middot;
+    htmx 4.0 alpha demo. Install the extension to see the HTMX DevTools panel (F12).
     <a href="https://github.com/atoolz/htmx-devtools#installation">Install Guide</a>
+    &middot; <a href="../v2/">v2.x Demo</a>
   </div>
 
   <div class="page-content">
@@ -451,6 +449,57 @@
     }
 
     window.XMLHttpRequest = MockXHR;
+
+    // htmx 4 uses fetch() instead of XHR - mock it too
+    var origFetch = window.fetch;
+    window.fetch = function(url, options) {
+      options = options || {};
+      var method = (options.method || 'GET').toUpperCase();
+      var path = typeof url === 'string' ? url.split('?')[0] : url.pathname || '/';
+      var params = {};
+
+      // Parse body
+      if (options.body) {
+        if (options.body instanceof FormData) {
+          options.body.forEach(function(v, k) { params[k] = v; });
+        } else if (typeof options.body === 'string') {
+          options.body.split('&').forEach(function(pair) {
+            var kv = pair.split('=');
+            params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
+          });
+        }
+      }
+
+      // Parse query string
+      if (typeof url === 'string' && url.indexOf('?') > -1) {
+        url.split('?')[1].split('&').forEach(function(pair) {
+          var kv = pair.split('=');
+          params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
+        });
+      }
+
+      var key = method + ' ' + path;
+      var handler = routes[key];
+
+      return new Promise(function(resolve) {
+        setTimeout(function() {
+          var status, responseText;
+          if (handler) {
+            var result = handler(params);
+            status = result[0];
+            responseText = result[1];
+          } else {
+            status = 404;
+            responseText = '<span class="badge badge-error">404: ' + path + ' not found</span>';
+          }
+          resolve(new Response(responseText, {
+            status: status,
+            statusText: status === 200 ? 'OK' : 'Error',
+            headers: { 'Content-Type': 'text/html' }
+          }));
+        }, 50 + Math.random() * 100);
+      });
+    };
   })();
   </script>
 </body>
