@@ -1,71 +1,58 @@
-export const HTMX_EVENTS = [
-  // Initialization
-  'htmx:beforeProcessNode',
-  'htmx:afterProcessNode',
-  'htmx:load',
-
-  // Request lifecycle
-  'htmx:confirm',
-  'htmx:prompt',
-  'htmx:configRequest',
-  'htmx:beforeRequest',
-  'htmx:beforeSend',
-  'htmx:afterRequest',
-  'htmx:afterOnLoad',
-
-  // XHR progress
-  'htmx:xhr:loadstart',
-  'htmx:xhr:loadend',
-  'htmx:xhr:progress',
-  'htmx:xhr:abort',
-
-  // Response handling
-  'htmx:beforeOnLoad',
-  'htmx:beforeSwap',
-  'htmx:afterSwap',
-  'htmx:afterSettle',
-
-  // Out-of-band swaps
-  'htmx:oobBeforeSwap',
-  'htmx:oobAfterSwap',
-
-  // History
-  'htmx:beforeHistoryUpdate',
-  'htmx:pushedIntoHistory',
-  'htmx:replacedInHistory',
-
-  // View transitions
+// htmx 2.x events
+export const HTMX2_EVENTS = [
+  'htmx:beforeProcessNode', 'htmx:afterProcessNode', 'htmx:load',
+  'htmx:confirm', 'htmx:prompt',
+  'htmx:configRequest', 'htmx:beforeRequest', 'htmx:beforeSend',
+  'htmx:afterRequest', 'htmx:afterOnLoad',
+  'htmx:xhr:loadstart', 'htmx:xhr:loadend', 'htmx:xhr:progress', 'htmx:xhr:abort',
+  'htmx:beforeOnLoad', 'htmx:beforeSwap', 'htmx:afterSwap', 'htmx:afterSettle',
+  'htmx:oobBeforeSwap', 'htmx:oobAfterSwap',
+  'htmx:beforeHistoryUpdate', 'htmx:pushedIntoHistory', 'htmx:replacedInHistory',
   'htmx:beforeTransition',
-
-  // Errors
-  'htmx:sendError',
-  'htmx:sendAbort',
-  'htmx:timeout',
-  'htmx:responseError',
-  'htmx:targetError',
-  'htmx:swapError',
-  'htmx:onLoadError',
-  'htmx:invalidPath',
-  'htmx:eventFilter:error',
+  'htmx:sendError', 'htmx:sendAbort', 'htmx:timeout',
+  'htmx:responseError', 'htmx:targetError', 'htmx:swapError',
+  'htmx:onLoadError', 'htmx:invalidPath', 'htmx:eventFilter:error',
   'htmx:validation:halted',
 ] as const
 
+// htmx 4.0 events (colon-namespaced)
+export const HTMX4_EVENTS = [
+  'htmx:abort',
+  'htmx:after:cleanup', 'htmx:after:history:push', 'htmx:after:history:replace',
+  'htmx:after:history:update', 'htmx:after:implicitInheritance',
+  'htmx:after:init', 'htmx:after:process', 'htmx:after:request',
+  'htmx:after:settle', 'htmx:after:swap', 'htmx:after:viewTransition',
+  'htmx:before:cleanup', 'htmx:before:history:restore', 'htmx:before:history:update',
+  'htmx:before:init', 'htmx:before:morph:node', 'htmx:before:process',
+  'htmx:before:request', 'htmx:before:response', 'htmx:before:settle',
+  'htmx:before:swap', 'htmx:before:viewTransition',
+  'htmx:config:request', 'htmx:confirm', 'htmx:error', 'htmx:finally:request',
+] as const
+
+// Combined: listen to both for dual-version support
+export const HTMX_EVENTS = [...new Set([...HTMX2_EVENTS, ...HTMX4_EVENTS])] as const
+
 export const ERROR_EVENTS = new Set([
-  'htmx:sendError',
-  'htmx:sendAbort',
-  'htmx:timeout',
-  'htmx:responseError',
-  'htmx:targetError',
-  'htmx:swapError',
-  'htmx:onLoadError',
-  'htmx:invalidPath',
-  'htmx:eventFilter:error',
+  // htmx 2.x errors
+  'htmx:sendError', 'htmx:sendAbort', 'htmx:timeout',
+  'htmx:responseError', 'htmx:targetError', 'htmx:swapError',
+  'htmx:onLoadError', 'htmx:invalidPath', 'htmx:eventFilter:error',
   'htmx:validation:halted',
+  // htmx 4.0 error (all consolidated into one)
+  'htmx:error',
 ])
 
+// htmx 2.x uses htmx:configRequest, htmx 4.0 uses htmx:config:request
+export const REQUEST_START_EVENTS = new Set([
+  'htmx:configRequest',
+  'htmx:config:request',
+])
+
+// Keep for backward compat
 export const REQUEST_START_EVENT = 'htmx:configRequest'
 
 export const EVENT_CATEGORIES: Record<string, string> = {
+  // htmx 2.x events
   'htmx:beforeProcessNode': 'init',
   'htmx:afterProcessNode': 'init',
   'htmx:load': 'init',
@@ -100,6 +87,33 @@ export const EVENT_CATEGORIES: Record<string, string> = {
   'htmx:invalidPath': 'error',
   'htmx:eventFilter:error': 'error',
   'htmx:validation:halted': 'error',
+  // htmx 4.0 events
+  'htmx:abort': 'request',
+  'htmx:before:init': 'init',
+  'htmx:after:init': 'init',
+  'htmx:before:process': 'init',
+  'htmx:after:process': 'init',
+  'htmx:config:request': 'request',
+  'htmx:before:request': 'request',
+  'htmx:before:response': 'response',
+  'htmx:after:request': 'request',
+  'htmx:finally:request': 'request',
+  'htmx:before:swap': 'swap',
+  'htmx:after:swap': 'swap',
+  'htmx:before:settle': 'swap',
+  'htmx:after:settle': 'swap',
+  'htmx:before:cleanup': 'init',
+  'htmx:after:cleanup': 'init',
+  'htmx:before:history:update': 'history',
+  'htmx:after:history:update': 'history',
+  'htmx:before:history:restore': 'history',
+  'htmx:after:history:push': 'history',
+  'htmx:after:history:replace': 'history',
+  'htmx:before:viewTransition': 'transition',
+  'htmx:after:viewTransition': 'transition',
+  'htmx:before:morph:node': 'swap',
+  'htmx:after:implicitInheritance': 'init',
+  'htmx:error': 'error',
 }
 
 export const LIMITS = {

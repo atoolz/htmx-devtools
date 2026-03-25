@@ -1,4 +1,4 @@
-import { HTMX_EVENTS, ERROR_EVENTS, LIMITS, REQUEST_START_EVENT } from '../shared/constants'
+import { HTMX_EVENTS, ERROR_EVENTS, LIMITS, REQUEST_START_EVENTS } from '../shared/constants'
 import { serializeElement, serializeDetail, getElementId } from '../shared/serializer'
 import type { CapturedEvent, ElementDescriptor, ErrorInfo, HtmxPageInfo, PageMessage } from '../shared/types'
 import { MESSAGE_SOURCE } from '../shared/types'
@@ -91,16 +91,17 @@ function handleHtmxEvent(event: Event): void {
 
   let requestId: string | null = null
 
-  // At configRequest, assign a new request ID
-  if (eventName === REQUEST_START_EVENT) {
+  // At configRequest (2.x) or config:request (4.0), assign a new request ID
+  if (REQUEST_START_EVENTS.has(eventName)) {
     requestId = generateRequestId()
-    const elt = detail.elt as Element | undefined
+    // htmx 4.0 uses detail.ctx.sourceElement, htmx 2.x uses detail.elt
+    const elt = (detail.elt ?? detail.ctx?.sourceElement) as Element | undefined
     const xhr = detail.xhr as XMLHttpRequest | undefined
     if (elt) {
       elementToRequestId.set(elt, requestId)
-      // Also stash on internal data for cross-reference
+      // Stash on internal data for cross-reference (htmx 2.x: htmx-internal-data, 4.0: _htmx)
       try {
-        const internalData = (elt as any)['htmx-internal-data']
+        const internalData = (elt as any)['htmx-internal-data'] ?? (elt as any)._htmx
         if (internalData) internalData.__devtools_req_id = requestId
       } catch { /* noop */ }
     }
@@ -110,17 +111,17 @@ function handleHtmxEvent(event: Event): void {
     const triggerEl = (elt ?? target) as Element
     const targetEl = detail.target as Element | undefined
 
-    // Safely extract headers as plain object
+    // Safely extract headers (htmx 2.x: detail.headers, 4.0: detail.ctx.request.headers)
     let safeHeaders: Record<string, string> = {}
     try {
-      const h = detail.headers
+      const h = detail.headers ?? detail.ctx?.request?.headers
       if (h && typeof h === 'object') safeHeaders = JSON.parse(JSON.stringify(h))
     } catch { /* noop */ }
 
-    // Safely extract parameters as plain object (may be FormData or proxy)
+    // Safely extract parameters (htmx 2.x: detail.parameters, 4.0: detail.ctx.request.body)
     let safeParams: Record<string, string> | null = null
     try {
-      const p = detail.parameters
+      const p = detail.parameters ?? detail.ctx?.request?.body
       if (p instanceof FormData) {
         safeParams = {}
         p.forEach((v, k) => { safeParams![k] = String(v) })
@@ -129,13 +130,17 @@ function handleHtmxEvent(event: Event): void {
       }
     } catch { /* noop */ }
 
+    // htmx 2.x: detail.verb/path, 4.0: detail.ctx.request.method/action
+    const verb = (detail.verb ?? detail.ctx?.request?.method) as string || ''
+    const url = (detail.path ?? detail.ctx?.request?.action) as string || ''
+
     postMessage({
       source: MESSAGE_SOURCE,
       type: 'htmx:request-update',
       payload: {
         id: requestId,
-        verb: detail.verb as string || '',
-        url: detail.path as string || '',
+        verb,
+        url,
         triggerElement: serializeElement(triggerEl),
         targetElement: targetEl ? serializeElement(targetEl) : null,
         requestHeaders: safeHeaders,
@@ -151,7 +156,7 @@ function handleHtmxEvent(event: Event): void {
       const elt = (detail.elt ?? target) as Element | undefined
       if (elt) {
         try {
-          const internalReqId = (elt as any)['htmx-internal-data']?.__devtools_req_id
+          const internalReqId = ((elt as any)['htmx-internal-data'] ?? (elt as any)._htmx)?.__devtools_req_id
           if (internalReqId) requestId = internalReqId
         } catch { /* noop */ }
       }
@@ -165,18 +170,54 @@ function handleHtmxEvent(event: Event): void {
     }
   }
 
-  // DOM snapshots for swap visualizer
-  if (eventName === 'htmx:beforeSwap' && requestId) {
-    const swapTarget = detail.target as Element | undefined
+  // DOM snapshots for swap visualizer (htmx 2.x and 4.0 event names)
+  if ((eventName === 'htmx:beforeSwap' || eventName === 'htmx:before:swap') && requestId) {
+    const swapTarget = (detail.target ?? detail.ctx?.target) as Element | undefined
     if (swapTarget) captureSnapshot(requestId, 'before', swapTarget)
   }
-  if (eventName === 'htmx:afterSwap' && requestId) {
-    const swapTarget = detail.target as Element | undefined
+  if ((eventName === 'htmx:afterSwap' || eventName === 'htmx:after:swap') && requestId) {
+    const swapTarget = (detail.target ?? detail.ctx?.target) as Element | undefined
     if (swapTarget) captureSnapshot(requestId, 'after', swapTarget)
   }
 
   // Capture response info
-  if ((eventName === 'htmx:beforeOnLoad' || eventName === 'htmx:afterRequest') && requestId) {
+  // htmx 2.x: htmx:beforeOnLoad/afterRequest with detail.xhr
+  // htmx 4.0: htmx:after:request with detail.ctx.response
+  const isResponseEvent = eventName === 'htmx:beforeOnLoad' || eventName === 'htmx:afterRequest'
+    || eventName === 'htmx:after:request'
+
+  if (isResponseEvent && requestId) {
+    // htmx 4.0: use detail.ctx
+    const ctx = detail.ctx as Record<string, any> | undefined
+    if (ctx?.response) {
+      let responseBody = ctx.text || ''
+      if (responseBody.length > LIMITS.MAX_RESPONSE_BODY) {
+        responseBody = responseBody.slice(0, LIMITS.MAX_RESPONSE_BODY) + '\n<!-- truncated -->'
+      }
+      const responseHeaders: Record<string, string> = {}
+      try {
+        const headers = ctx.response.headers
+        if (headers?.forEach) {
+          headers.forEach((val: string, key: string) => {
+            if (key.toLowerCase().startsWith('hx-') || key.toLowerCase() === 'content-type') {
+              responseHeaders[key] = val
+            }
+          })
+        }
+      } catch { /* noop */ }
+      postMessage({
+        source: MESSAGE_SOURCE,
+        type: 'htmx:request-update',
+        payload: {
+          id: requestId,
+          httpStatus: ctx.response.status,
+          responseBody,
+          responseHeaders,
+        },
+      })
+    }
+
+    // htmx 2.x: use detail.xhr
     const xhr = detail.xhr as XMLHttpRequest | undefined
     if (xhr) {
       let responseBody = ''
@@ -426,7 +467,7 @@ window.addEventListener('message', (event) => {
 
     const internalData: Record<string, unknown> = {}
     try {
-      const data = (el as any)['htmx-internal-data']
+      const data = (el as any)['htmx-internal-data'] ?? (el as any)._htmx
       if (data) {
         for (const key of Object.keys(data)) {
           const val = data[key]
@@ -441,7 +482,7 @@ window.addEventListener('message', (event) => {
       }
     } catch { /* noop */ }
 
-    const reqId = (el as any)['htmx-internal-data']?.__devtools_req_id
+    const reqId = ((el as any)['htmx-internal-data'] ?? (el as any)._htmx)?.__devtools_req_id
     const requestHistory = reqId ? [reqId] : []
 
     postMessage({
