@@ -121,8 +121,19 @@ api.runtime.onMessage.addListener((message: any, sender: chrome.runtime.MessageS
     }
 
     case 'htmx:request-update': {
+      const prevErrorCount = store.getTabState(tabId).errors.length
       const request = tracker.handleRequestUpdate(tabId, payload)
       sendToPanel(tabId, { type: 'state:request', payload: request })
+      // Send any synthetic errors generated during update (e.g. HTTP 4xx/5xx)
+      const newErrors = store.getTabState(tabId).errors.slice(prevErrorCount)
+      for (const err of newErrors) {
+        sendToPanel(tabId, { type: 'state:error', payload: err })
+      }
+      if (newErrors.length > 0) {
+        const errorCount = store.getTabState(tabId).errors.length
+        api.action.setBadgeText({ text: String(errorCount), tabId })
+        api.action.setBadgeBackgroundColor({ color: '#ef4444', tabId })
+      }
       break
     }
 

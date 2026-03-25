@@ -1,6 +1,8 @@
-import type { RequestLifecycle, CapturedEvent, ElementDescriptor } from '../shared/types'
+import type { RequestLifecycle, CapturedEvent, ElementDescriptor, ErrorInfo } from '../shared/types'
 import { createRequestLifecycle, applyEventToRequest, getPhaseForEvent } from '../shared/request-grouper'
 import * as store from './state-store'
+
+let syntheticErrorId = 100000
 
 export function handleRequestUpdate(
   tabId: number,
@@ -30,7 +32,25 @@ export function handleRequestUpdate(
   if (update.finalUrl != null) request.finalUrl = update.finalUrl
   if (update.triggerElement != null) request.triggerElement = update.triggerElement
   if (update.targetElement !== undefined) request.targetElement = update.targetElement
-  if (update.httpStatus != null) request.httpStatus = update.httpStatus
+  if (update.httpStatus != null) {
+    request.httpStatus = update.httpStatus
+    // Synthesize error for HTTP 4xx/5xx (htmx 4 doesn't fire htmx:error for these)
+    if (update.httpStatus >= 400 && request.status !== 'error') {
+      request.status = 'error'
+      const httpError: ErrorInfo = {
+        id: syntheticErrorId++,
+        severity: 'error',
+        type: 'httpError',
+        message: `HTTP ${update.httpStatus} from ${request.url}`,
+        element: request.triggerElement,
+        requestId: request.id,
+        timestamp: Date.now(),
+        eventName: 'htmx:httpError',
+      }
+      request.errors.push(httpError)
+      store.addError(tabId, httpError)
+    }
+  }
   if (update.requestHeaders != null) request.requestHeaders = update.requestHeaders
   if (update.responseHeaders != null) {
     request.responseHeaders = { ...request.responseHeaders, ...update.responseHeaders }
