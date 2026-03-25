@@ -3,13 +3,15 @@
 </p>
 
 <p align="center">
-  Browser DevTools extension for debugging HTMX applications. Inspect requests, elements, events, swaps, and errors in real time.
+  Browser DevTools extension for debugging <a href="https://htmx.org">HTMX</a> applications.<br>
+  Works with both <strong>htmx 2.x</strong> and <strong>htmx 4.0 alpha</strong>.
 </p>
 
 <p align="center">
   <a href="https://github.com/atoolz/htmx-devtools/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license MIT"></a>
-  <a href="https://htmx.org"><img src="https://img.shields.io/badge/HTMX-2.x-blue" alt="HTMX 2.x"></a>
+  <a href="https://htmx.org"><img src="https://img.shields.io/badge/htmx-2.x%20%2B%204.0-blue" alt="htmx 2.x + 4.0"></a>
   <a href="https://atoolz.github.io/htmx-devtools/"><img src="https://img.shields.io/badge/demo-live-brightgreen" alt="Live Demo"></a>
+  <img src="https://img.shields.io/badge/version-0.2.0-orange" alt="v0.2.0">
 </p>
 
 ## Features
@@ -23,6 +25,7 @@ Capture the full HTMX request lifecycle with timing breakdown, headers, request/
 - Visual timeline bar (Config > Send > Wait > Swap > Settle)
 - HX-* request and response headers
 - Record / Pause / Clear controls
+- HTTP error detection (4xx/5xx shown as errors even on htmx 4 where they swap by default)
 
 <p align="center">
   <img src="assets/feature-requests.svg" alt="Request Inspector" width="800">
@@ -30,12 +33,13 @@ Capture the full HTMX request lifecycle with timing breakdown, headers, request/
 
 ### Element Inspector
 
-Live DOM tree showing all HTMX elements with their hierarchy, attributes, and resolved targets. Updates in real time as the page changes.
+Live DOM tree showing all HTMX elements with their hierarchy, attributes, and resolved targets. Auto-refreshes in real time.
 
 - Collapsible DOM tree filtered to HTMX-relevant nodes
 - Click to inspect: shows `hx-*` attributes, resolved targets, internal data
-- Element picker: click any element on the page to inspect it
+- Element picker (Chrome DevTools style): click any element on the page
 - Hover highlighting on the inspected page
+- Request history per element (click to jump to Requests tab)
 
 <p align="center">
   <img src="assets/feature-elements.svg" alt="Element Inspector" width="800">
@@ -49,6 +53,7 @@ Filterable timeline of all HTMX events with category color coding and expandable
 - Timestamps relative to first event
 - Click to expand full `event.detail` JSON
 - Request correlation (linked request ID)
+- Per-tab search (filters reset when switching tabs)
 
 <p align="center">
   <img src="assets/feature-timeline.svg" alt="Event Timeline" width="800">
@@ -56,12 +61,12 @@ Filterable timeline of all HTMX events with category color coding and expandable
 
 ### Swap Visualizer
 
-Record DOM swaps with before/after snapshots and diff view.
+Record DOM swaps with before/after snapshots and LCS-based diff view.
 
 - Record / Pause controls
 - Response HTML view
 - Before / After DOM snapshots
-- Line-by-line diff with add/remove highlighting
+- Line-by-line diff with add/remove highlighting (LCS algorithm)
 - Swap strategy and target element info
 
 <p align="center">
@@ -72,7 +77,7 @@ Record DOM swaps with before/after snapshots and diff view.
 
 Surface silent HTMX failures grouped by error type with badge counts.
 
-- Response errors (4xx, 5xx)
+- HTTP errors (4xx, 5xx) detected automatically
 - Target not found errors
 - Network timeouts and swap errors
 - Click to jump to associated request
@@ -80,6 +85,23 @@ Surface silent HTMX failures grouped by error type with badge counts.
 <p align="center">
   <img src="assets/feature-errors.svg" alt="Error Panel" width="800">
 </p>
+
+---
+
+## htmx 4.0 Support
+
+Version 0.2.0 adds full support for the htmx 4.0 alpha. The extension auto-detects which version is running and adapts transparently.
+
+| | htmx 2.x | htmx 4.0 |
+|---|---|---|
+| **Event format** | `htmx:configRequest` | `htmx:config:request` |
+| **Request tracking** | XHR WeakMap | ctx object WeakMap |
+| **Detail structure** | `detail.elt`, `detail.xhr` | `detail.ctx.sourceElement`, `detail.ctx.response` |
+| **Error events** | 10 separate events | Unified `htmx:error` + synthetic HTTP errors |
+| **Attributes** | `hx-ext`, `hx-request` | `hx-action`, `hx-method`, `hx-config`, `hx-status` |
+| **Version badge** | Blue pill | Purple pill |
+
+Both versions work simultaneously. No configuration needed.
 
 ---
 
@@ -115,11 +137,12 @@ npm run build:firefox
 
 ## Live Demo
 
-Try the extension with the interactive demo page (no server needed):
+Try the extension with interactive demo pages (no server needed):
 
-**[atoolz.github.io/htmx-devtools](https://atoolz.github.io/htmx-devtools/)**
+- **[htmx 2.x Demo](https://atoolz.github.io/htmx-devtools/v2/)** (XHR mock)
+- **[htmx 4.0 Demo](https://atoolz.github.io/htmx-devtools/v4/)** (fetch mock)
 
-The demo uses a client-side mock server that intercepts XMLHttpRequest, so all HTMX features work in the browser. Install the extension, open the demo, and press F12 > HTMX tab.
+Install the extension, open a demo, press F12, and go to the HTMX tab.
 
 ---
 
@@ -134,10 +157,10 @@ events on            postMessage +         maintains state      with real-time
 document             runtime.sendMessage   per tab              updates
 ```
 
-- **Page Script** runs in the page's JS context via `"world": "MAIN"` content script. Listens to all `htmx:*` events, serializes element data, and batches messages every 50ms.
+- **Page Script** runs in the page's JS context via `"world": "MAIN"` content script. Listens to all `htmx:*` events (both 2.x and 4.x names), serializes element data, tracks requests via XHR/ctx WeakMaps, and batches messages every 50ms.
 - **Content Script** bridges page and extension contexts via `window.postMessage` and `chrome.runtime.sendMessage`.
-- **Background Service Worker** manages per-tab state, tracks request lifecycles, correlates events to requests, and routes data to the panel.
-- **Panel** is a Preact + Signals app (50KB) rendered inside `chrome.devtools.panels.create()`.
+- **Background Service Worker** manages per-tab state, tracks request lifecycles with canonical event name mapping, correlates events to requests, synthesizes HTTP errors for 4xx/5xx, and routes data to the panel.
+- **Panel** is a Preact + Signals app (~55KB) rendered inside `chrome.devtools.panels.create()`.
 
 ---
 
@@ -149,7 +172,6 @@ npm run build          # Production build
 npm run build:chrome   # Build + copy Chrome manifest + icons
 npm run build:firefox  # Build + copy Firefox manifest + icons
 npm run typecheck      # TypeScript type check
-npm run test           # Run tests
 ```
 
 ### Local test server
@@ -172,6 +194,7 @@ Covers: GET/POST/PUT/DELETE, error scenarios (404, 500, timeout), all swap strat
 | **UI** | Preact + @preact/signals (3KB gzipped) |
 | **Manifest** | Chrome MV3 (also Firefox MV3 128+) |
 | **Target** | Chrome, Edge, Brave, Arc, Opera, Firefox |
+| **Dependencies** | 7 devDependencies, 0 runtime dependencies |
 
 ---
 
