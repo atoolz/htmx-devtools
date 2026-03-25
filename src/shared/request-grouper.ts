@@ -48,6 +48,7 @@ export function createRequestLifecycle(
 
 export function getPhaseForEvent(eventName: string): RequestPhase | null {
   switch (eventName) {
+    // htmx 2.x
     case 'htmx:configRequest': return 'configuring'
     case 'htmx:beforeSend':
     case 'htmx:beforeRequest': return 'sending'
@@ -56,6 +57,16 @@ export function getPhaseForEvent(eventName: string): RequestPhase | null {
     case 'htmx:afterSwap': return 'settling'
     case 'htmx:afterSettle': return 'settling'
     case 'htmx:afterRequest': return 'complete'
+    // htmx 4.0
+    case 'htmx:config:request': return 'configuring'
+    case 'htmx:before:request': return 'sending'
+    case 'htmx:before:response': return 'loading'
+    case 'htmx:before:swap': return 'swapping'
+    case 'htmx:after:swap': return 'settling'
+    case 'htmx:before:settle': return 'settling'
+    case 'htmx:after:settle': return 'settling'
+    case 'htmx:after:request': return 'complete'
+    case 'htmx:finally:request': return 'complete'
     default:
       if (ERROR_EVENTS.has(eventName)) return 'error'
       return null
@@ -64,6 +75,7 @@ export function getPhaseForEvent(eventName: string): RequestPhase | null {
 
 export function getStatusForEvent(eventName: string): RequestStatus | null {
   switch (eventName) {
+    // htmx 2.x
     case 'htmx:afterRequest': return 'success'
     case 'htmx:sendError': return 'error'
     case 'htmx:responseError': return 'error'
@@ -71,12 +83,16 @@ export function getStatusForEvent(eventName: string): RequestStatus | null {
     case 'htmx:onLoadError': return 'error'
     case 'htmx:sendAbort': return 'aborted'
     case 'htmx:timeout': return 'timeout'
+    // htmx 4.0
+    case 'htmx:after:request': return 'success'
+    case 'htmx:error': return 'error'
     default: return null
   }
 }
 
 export function updateTimingForEvent(timing: RequestTiming, eventName: string, timestamp: number): void {
   switch (eventName) {
+    // htmx 2.x
     case 'htmx:configRequest': timing.configuredAt = timestamp; break
     case 'htmx:beforeSend': timing.sentAt = timestamp; break
     case 'htmx:beforeOnLoad': timing.responseAt = timestamp; break
@@ -84,6 +100,15 @@ export function updateTimingForEvent(timing: RequestTiming, eventName: string, t
     case 'htmx:afterSwap': timing.swapEndAt = timestamp; break
     case 'htmx:afterSettle': timing.settledAt = timestamp; break
     case 'htmx:afterRequest': timing.completedAt = timestamp; break
+    // htmx 4.0
+    case 'htmx:config:request': timing.configuredAt = timestamp; break
+    case 'htmx:before:request': timing.sentAt = timestamp; break
+    case 'htmx:before:response': timing.responseAt = timestamp; break
+    case 'htmx:before:swap': timing.swapStartAt = timestamp; break
+    case 'htmx:after:swap': timing.swapEndAt = timestamp; break
+    case 'htmx:after:settle': timing.settledAt = timestamp; break
+    case 'htmx:after:request': timing.completedAt = timestamp; break
+    case 'htmx:finally:request': timing.completedAt ??= timestamp; break
   }
 }
 
