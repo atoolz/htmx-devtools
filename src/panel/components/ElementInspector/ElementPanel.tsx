@@ -276,9 +276,13 @@ export function ElementInspector() {
     // Auto-refresh every 2s for real-time updates
     const interval = setInterval(doScan, 2000)
 
-    // Also re-scan when new htmx events arrive
+    // Debounced re-scan when new htmx events arrive (avoids excessive eval calls)
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
     const unsubEvents = events.subscribe((evts) => {
-      if (evts.length > 0) doScan()
+      if (evts.length > 0) {
+        if (debounceTimer) clearTimeout(debounceTimer)
+        debounceTimer = setTimeout(doScan, 500)
+      }
     })
 
     // Subscribe to picker results from page-script
@@ -294,6 +298,7 @@ export function ElementInspector() {
 
     return () => {
       clearInterval(interval)
+      if (debounceTimer) clearTimeout(debounceTimer)
       unsubEvents()
       unsubPicked()
     }

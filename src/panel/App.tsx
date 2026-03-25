@@ -1,4 +1,5 @@
 import { activeTab, errorCount, pageInfo, searchQuery } from './store'
+import { useEffect } from 'preact/hooks'
 import { RequestInspector } from './components/RequestInspector/RequestList'
 import { ElementInspector } from './components/ElementInspector/ElementPanel'
 import { Timeline } from './components/EventTimeline/Timeline'
@@ -18,6 +19,9 @@ export function App() {
   const tab = activeTab.value
   const info = pageInfo.value
   const errCount = errorCount.value
+
+  // Clear search filter when switching tabs
+  useEffect(() => { searchQuery.value = '' }, [tab])
 
   return (
     <div class="app">

@@ -1,36 +1,59 @@
+// Simple LCS-based diff for DOM snapshots
+function lcs(a: string[], b: string[]): number[][] {
+  const m = a.length
+  const n = b.length
+  // For large inputs, fall back to a simpler approach
+  if (m * n > 100000) return []
+
+  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
+  for (let i = m - 1; i >= 0; i--) {
+    for (let j = n - 1; j >= 0; j--) {
+      if (a[i] === b[j]) dp[i][j] = dp[i + 1][j + 1] + 1
+      else dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1])
+    }
+  }
+  return dp
+}
+
 function diffLines(before: string, after: string): Array<{ type: 'same' | 'added' | 'removed'; text: string }> {
-  const beforeLines = before.split('\n')
-  const afterLines = after.split('\n')
+  const a = before.split('\n')
+  const b = after.split('\n')
   const result: Array<{ type: 'same' | 'added' | 'removed'; text: string }> = []
 
-  const beforeSet = new Set(beforeLines)
-  const afterSet = new Set(afterLines)
+  const dp = lcs(a, b)
 
-  // Simple line-by-line diff (not LCS, but good enough for most swaps)
-  let bi = 0
-  let ai = 0
-
-  while (bi < beforeLines.length || ai < afterLines.length) {
-    if (bi < beforeLines.length && ai < afterLines.length && beforeLines[bi] === afterLines[ai]) {
-      result.push({ type: 'same', text: beforeLines[bi] })
-      bi++
-      ai++
-    } else if (bi < beforeLines.length && !afterSet.has(beforeLines[bi])) {
-      result.push({ type: 'removed', text: beforeLines[bi] })
-      bi++
-    } else if (ai < afterLines.length && !beforeSet.has(afterLines[ai])) {
-      result.push({ type: 'added', text: afterLines[ai] })
-      ai++
-    } else {
-      // Mismatch: show as removed + added
-      if (bi < beforeLines.length) {
-        result.push({ type: 'removed', text: beforeLines[bi] })
+  // Fallback for large inputs: simple line-by-line comparison
+  if (dp.length === 0) {
+    let ai = 0
+    let bi = 0
+    while (ai < a.length || bi < b.length) {
+      if (ai < a.length && bi < b.length && a[ai] === b[bi]) {
+        result.push({ type: 'same', text: a[ai] })
+        ai++; bi++
+      } else if (ai < a.length) {
+        result.push({ type: 'removed', text: a[ai] })
+        ai++
+      } else {
+        result.push({ type: 'added', text: b[bi] })
         bi++
       }
-      if (ai < afterLines.length) {
-        result.push({ type: 'added', text: afterLines[ai] })
-        ai++
-      }
+    }
+    return result
+  }
+
+  // Trace back through LCS table
+  let i = 0
+  let j = 0
+  while (i < a.length || j < b.length) {
+    if (i < a.length && j < b.length && a[i] === b[j]) {
+      result.push({ type: 'same', text: a[i] })
+      i++; j++
+    } else if (j < b.length && (i >= a.length || dp[i][j + 1] >= dp[i + 1][j])) {
+      result.push({ type: 'added', text: b[j] })
+      j++
+    } else {
+      result.push({ type: 'removed', text: a[i] })
+      i++
     }
   }
 
@@ -55,7 +78,7 @@ export function DomDiff({ before, after }: { before: string; after: string }) {
   return (
     <pre style={{
       fontFamily: 'var(--font-mono)',
-      fontSize: '11px',
+      fontSize: '12px',
       lineHeight: '1.5',
       overflow: 'auto',
       maxHeight: '400px',

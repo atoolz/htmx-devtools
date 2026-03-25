@@ -40,23 +40,25 @@ function captureTargetHtml(selector: string, callback: (html: string | null) => 
 function processNewSwaps(): void {
   if (!recording.value) return
 
-  let changed = false
+  let newRecords = [...swapRecords.value]
+  let hasChanges = false
 
   for (const req of requests.value) {
     if (!req.responseBody) continue
     if (req.phase === 'trigger' || req.phase === 'configuring') continue
 
-    const existing = swapRecords.value.find(r => r.requestId === req.id)
+    const existingIdx = newRecords.findIndex(r => r.requestId === req.id)
 
-    if (existing) {
-      // Update existing record if snapshots arrived
-      if (req.domBefore && !existing.targetBefore) {
-        existing.targetBefore = req.domBefore
-        changed = true
-      }
-      if (req.domAfter && !existing.targetAfter) {
-        existing.targetAfter = req.domAfter
-        changed = true
+    if (existingIdx >= 0) {
+      const existing = newRecords[existingIdx]
+      // Update with immutable copy if snapshots arrived
+      if ((req.domBefore && !existing.targetBefore) || (req.domAfter && !existing.targetAfter)) {
+        newRecords[existingIdx] = {
+          ...existing,
+          targetBefore: existing.targetBefore || req.domBefore || null,
+          targetAfter: existing.targetAfter || req.domAfter || null,
+        }
+        hasChanges = true
       }
       continue
     }
@@ -82,18 +84,20 @@ function processNewSwaps(): void {
     if (targetSel && !record.targetAfter) {
       captureTargetHtml(targetSel, (html) => {
         if (html) {
-          record.targetAfter = html
-          swapRecords.value = [...swapRecords.value]
+          // Immutable update
+          swapRecords.value = swapRecords.value.map(r =>
+            r.requestId === record.requestId ? { ...r, targetAfter: html } : r
+          )
         }
       })
     }
 
-    swapRecords.value = [...swapRecords.value, record]
-    changed = false // already triggered by assignment above
+    newRecords = [...newRecords, record]
+    hasChanges = true
   }
 
-  if (changed) {
-    swapRecords.value = [...swapRecords.value]
+  if (hasChanges) {
+    swapRecords.value = newRecords
   }
 }
 
