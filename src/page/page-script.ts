@@ -117,7 +117,15 @@ function handleHtmxEvent(event: Event): void {
       // Stash on internal data for cross-reference (htmx 2.x: htmx-internal-data, 4.0: _htmx)
       try {
         const internalData = (elt as any)['htmx-internal-data'] ?? (elt as any)._htmx
-        if (internalData) internalData.__devtools_req_id = requestId
+        if (internalData) {
+          internalData.__devtools_req_id = requestId
+          if (!internalData.__devtools_req_history) internalData.__devtools_req_history = []
+          internalData.__devtools_req_history.push(requestId)
+          // Keep last 20 to avoid unbounded growth
+          if (internalData.__devtools_req_history.length > 20) {
+            internalData.__devtools_req_history = internalData.__devtools_req_history.slice(-20)
+          }
+        }
       } catch { /* noop */ }
     }
     if (xhr) xhrToRequestId.set(xhr, requestId)
@@ -504,8 +512,8 @@ window.addEventListener('message', (event) => {
       }
     } catch { /* noop */ }
 
-    const reqId = ((el as any)['htmx-internal-data'] ?? (el as any)._htmx)?.__devtools_req_id
-    const requestHistory = reqId ? [reqId] : []
+    const internalRef = (el as any)['htmx-internal-data'] ?? (el as any)._htmx
+    const requestHistory: string[] = internalRef?.__devtools_req_history ?? (internalRef?.__devtools_req_id ? [internalRef.__devtools_req_id] : [])
 
     postMessage({
       source: MESSAGE_SOURCE,
