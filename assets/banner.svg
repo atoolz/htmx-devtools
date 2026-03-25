@@ -79,7 +79,7 @@
       <text x="258" y="54">Errors</text>
       <rect x="290" y="46" width="18" height="14" rx="7" fill="#ef4444"/>
       <text x="299" y="56" text-anchor="middle" fill="white" font-size="9" font-weight="700">2</text>
-      <text x="490" y="54" fill="#4a5568" font-size="10">htmx v2.0.4</text>
+      <text x="490" y="54" fill="#4a5568" font-size="10">htmx 2.x + 4.0</text>
     </g>
 
     <!-- Toolbar -->
