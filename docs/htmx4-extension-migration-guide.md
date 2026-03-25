@@ -246,8 +246,9 @@ htmx_config_request: (elt, detail) => {
 },
 
 htmx_before_swap: (elt, detail) => {
-    // No shouldSwap. Return false to cancel, or just proceed.
-    detail.ctx.target = document.getElementById('other');
+    // Return false to cancel the swap, or just proceed.
+    // Note: target redirection works in htmx_config_request (detail.ctx.target),
+    // NOT in htmx_before_swap where tasks are already built.
 }
 ```
 
@@ -385,6 +386,7 @@ htmx.config.compat = {
 - [ ] Replace `onEvent` catch-all with individual `htmx_*` hook methods
 - [ ] Replace all `evt.detail.xhr.*` access with `detail.ctx.*`
 - [ ] Update event name references (camelCase to colon-namespaced)
+- [ ] Replace `htmx:xhr:loadend` listeners with `htmx_finally_request` (always fires, even on errors)
 - [ ] Replace `transformResponse` with `htmx_after_request` + `detail.ctx.text`
 - [ ] Replace `encodeParameters` with `htmx_config_request` + `detail.ctx.request.body`
 - [ ] Merge `isInlineSwap` + `handleSwap` into `handle_swap`

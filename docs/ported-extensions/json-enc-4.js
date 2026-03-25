@@ -43,16 +43,9 @@
 
       // Note: htmx 2.x used api.getExpressionVars() to restore hx-vals types
       // (FormData stringifies everything). This API does not exist in htmx 4.0.
-      // Use api.getAttributeObject as a best-effort alternative.
-      try {
-        api.getAttributeObject(elt, 'hx-vals', (vals) => {
-          Object.keys(object).forEach((key) => {
-            if (vals && Object.hasOwn(vals, key)) {
-              object[key] = vals[key]
-            }
-          })
-        })
-      } catch { /* getAttributeObject may not be available */ }
+      // Type restoration for hx-vals is not currently possible.
+      // All values will be strings in the JSON output.
+      // If you need typed values, use hx-vals='js:{key: typedValue}' in your HTML.
 
       // Replace FormData body with JSON string
       detail.ctx.request.body = JSON.stringify(object)

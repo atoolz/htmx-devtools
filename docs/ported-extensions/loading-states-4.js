@@ -10,7 +10,7 @@
  * - defineExtension -> registerExtension
  * - onEvent catch-all -> htmx_before_request / htmx_after_request hooks
  * - htmx:beforeRequest -> htmx_before_request
- * - htmx:beforeOnLoad -> htmx_after_request (fires when response arrives)
+ * - htmx:beforeOnLoad -> htmx_finally_request (always fires, even on errors/aborts)
  * - htmx.closest() removed, use native Element.closest()
  * - htmx.findAll() removed, use document.querySelectorAll()
  * - evt.detail.pathInfo.requestPath -> detail.ctx.request.action
@@ -140,8 +140,11 @@
       })
     },
 
-    // Undo loading states for this specific request
-    htmx_after_request: (elt, detail) => {
+    // Undo loading states for this specific request.
+    // Uses htmx_finally_request (not htmx_after_request) because after_request
+    // does NOT fire on network errors, aborts, or timeouts. finally_request
+    // always fires, ensuring loading states are cleaned up even on failures.
+    htmx_finally_request: (elt, detail) => {
       const undoQueue = detail.ctx._loadingUndoQueue || []
       while (undoQueue.length > 0) {
         undoQueue.shift()()
