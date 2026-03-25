@@ -7,6 +7,7 @@ let eventIdCounter = 0
 let snapshotsEnabled = true
 
 const xhrToRequestId = new WeakMap<XMLHttpRequest, string>()
+const ctxToRequestId = new WeakMap<object, string>() // htmx 4: track by ctx object
 const elementToRequestId = new WeakMap<Element, string>()
 
 // ---- Batching ----
@@ -51,14 +52,28 @@ function generateRequestId(): string {
 }
 
 function getRequestIdForEvent(detail: Record<string, unknown>): string | null {
+  // htmx 4: try ctx object first (shared across all events in a request)
+  const ctx = detail.ctx as object | undefined
+  if (ctx) {
+    const id = ctxToRequestId.get(ctx)
+    if (id) return id
+  }
+  // htmx 2: try xhr
   const xhr = detail.xhr as XMLHttpRequest | undefined
   if (xhr) {
     const id = xhrToRequestId.get(xhr)
     if (id) return id
   }
-  const elt = detail.elt as Element | undefined
+  // Try element (both v2 and v4)
+  const elt = (detail.elt ?? (detail.ctx as any)?.sourceElement) as Element | undefined
   if (elt) {
-    return elementToRequestId.get(elt) ?? null
+    const id = elementToRequestId.get(elt)
+    if (id) return id
+    // Fallback: internal data
+    try {
+      const internalReqId = ((elt as any)['htmx-internal-data'] ?? (elt as any)._htmx)?.__devtools_req_id
+      if (internalReqId) return internalReqId
+    } catch { /* noop */ }
   }
   return null
 }
@@ -106,6 +121,10 @@ function handleHtmxEvent(event: Event): void {
       } catch { /* noop */ }
     }
     if (xhr) xhrToRequestId.set(xhr, requestId)
+    // htmx 4: track by ctx object (shared across all events in a request lifecycle)
+    if (detail.ctx && typeof detail.ctx === 'object') {
+      ctxToRequestId.set(detail.ctx as object, requestId)
+    }
 
     // Build request-update with config details
     const triggerEl = (elt ?? target) as Element
@@ -162,10 +181,13 @@ function handleHtmxEvent(event: Event): void {
       }
     }
 
-    // Link XHR to request ID if we haven't yet
-    if (requestId && detail.xhr instanceof XMLHttpRequest) {
-      if (!xhrToRequestId.has(detail.xhr)) {
+    // Link XHR/ctx to request ID if we haven't yet
+    if (requestId) {
+      if (detail.xhr instanceof XMLHttpRequest && !xhrToRequestId.has(detail.xhr)) {
         xhrToRequestId.set(detail.xhr, requestId)
+      }
+      if (detail.ctx && typeof detail.ctx === 'object' && !ctxToRequestId.has(detail.ctx as object)) {
+        ctxToRequestId.set(detail.ctx as object, requestId)
       }
     }
   }
